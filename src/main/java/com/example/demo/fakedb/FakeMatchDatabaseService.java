@@ -3,10 +3,15 @@ package com.example.demo.fakedb;
 import com.example.demo.model.Match;
 import org.springframework.stereotype.Repository;
 
+import javax.swing.*;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository("fakeDB")
 public class FakeMatchDatabaseService implements MatchDB {
@@ -40,14 +45,26 @@ public class FakeMatchDatabaseService implements MatchDB {
     }
 
     @Override
-    public List<Match> selectAllMatches() {
-        return matchDB;
+    public List<Match> selectMatchesByDate(String date) throws ParseException {
+        SimpleDateFormat fmt = new SimpleDateFormat("dd-MM-yyyy");
+
+        System.out.println("OK");
+
+        if(date == null) {
+            return matchDB;
+        } else {
+            Date d = fmt.parse(date);
+
+            return matchDB.stream()
+                    .filter(match -> fmt.format(match.getDate()).equals(fmt.format(d)))
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
     public Optional<Match> selectMatchById(int id) {
-        return matchDB.stream().
-                filter(match -> match.getId() == id).
-                findFirst();
+        return matchDB.stream()
+                .filter(match -> match.getId() == id)
+                .findFirst();
     }
 }

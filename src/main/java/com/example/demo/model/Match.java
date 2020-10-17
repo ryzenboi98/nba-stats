@@ -1,6 +1,8 @@
 package com.example.demo.model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Match {
     private int id;
@@ -9,8 +11,14 @@ public class Match {
     private final String visitorTeam;
     private final int homeScore;
     private final int visitorScore;
+    private final ArrayList<Comment> comments = new ArrayList<Comment>();
 
-    public Match(int id, Timestamp date, String homeTeam, String visitorTeam, int homeScore, int visitorScore) {
+    public Match(int id,
+                 Timestamp date,
+                 String homeTeam,
+                 String visitorTeam,
+                 int homeScore,
+                 int visitorScore) {
         this.id = id;
         this.date = date;
         this.homeTeam = homeTeam;
@@ -42,4 +50,22 @@ public class Match {
     public String getVisitorTeam() {
         return visitorTeam;
     }
+
+    public void addComment(Comment comment) {
+        comments.add(comment);
+    }
+
+    public ArrayList<Comment> getAllComments() {
+        return comments;
+    }
+
+    public Comment getCommentById(int id) {
+        for (Comment comment : comments) {
+            if (comment.getId() == id)
+                return comment;
+        }
+
+        return null;
+    }
+
 }
