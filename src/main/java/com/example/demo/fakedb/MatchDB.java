@@ -14,4 +14,6 @@ public interface MatchDB {
     Optional <Match> selectMatchById(int id);
 
     int insertComments(int matchID, List<Comment> comments);
+    int deleteCommentById(int matchID, int commentID);
+    int updateCommentById(int matchID, int commentID, Comment comment);
 }

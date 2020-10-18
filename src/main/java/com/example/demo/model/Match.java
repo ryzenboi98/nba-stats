@@ -61,11 +61,26 @@ public class Match {
 
     public Comment getCommentById(int id) {
         for (Comment comment : comments) {
-            if (comment.getId() == id)
+            if (comment.getId() == id) {
                 return comment;
-        }
+            }
 
+        }
         return null;
+    }
+
+    public void deleteComment(Comment com) {
+        comments.remove(com);
+    }
+
+    public void updateComment(int id, Comment com) {
+        Comment c = getCommentById(id);
+        int id_c = c.getId();
+        int index = comments.indexOf(c);
+
+        System.out.println("index = " + index);
+
+        comments.set(index, new Comment(id_c, com.getMessage(), new Timestamp(System.currentTimeMillis())));
     }
 
 }

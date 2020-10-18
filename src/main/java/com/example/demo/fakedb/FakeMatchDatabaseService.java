@@ -98,6 +98,8 @@ public class FakeMatchDatabaseService implements MatchDB {
                 for(Comment com : comments) {
                     Comment c = new Comment(id, com.getMessage(), t);
                     match.addComment(c);
+
+                    id++;
                 }
 
             } else {
@@ -105,10 +107,70 @@ public class FakeMatchDatabaseService implements MatchDB {
                 for(Comment com : comments) {
                     Comment c = new Comment(id, com.getMessage(), t);
                     match.addComment(c);
+
+                    id++;
                 }
             }
             return 1;
         } else
             return 0;
+    }
+
+    @Override
+    public int deleteCommentById(int matchID, int commentID) {
+        System.out.println("DELETE");
+        Match match = null;
+        Comment com ;
+        for(Match m : matchDB)
+            if(m.getId() == matchID) {
+                match = m;
+                break;
+            }
+
+        if(match != null)
+        {
+            com = match.getCommentById(commentID);
+
+            if(com != null) {
+                match.deleteComment(com);
+
+                return 1;
+            } else {
+                // comment ID doesn't exists
+                return 0;
+            }
+        } else {
+            // matchID doesn't exist
+            return 0;
+        }
+    }
+
+    @Override
+    public int updateCommentById(int matchID, int commentID, Comment comment) {
+        System.out.println("UPDATE");
+        Match match = null;
+        Comment com;
+
+        System.out.println("Match ID -> " + matchID);
+        System.out.println("Comment ID -> " + commentID);
+        System.out.println("Comment message -> " + comment.getMessage());
+
+        for(Match m : matchDB)
+            if(m.getId() == matchID) {
+                match = m;
+                break;
+            }
+
+        if(match != null) {
+            com = match.getCommentById(commentID);
+            if(com != null) {
+                match.updateComment(commentID, comment);
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
     }
 }

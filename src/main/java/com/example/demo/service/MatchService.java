@@ -36,4 +36,12 @@ public class MatchService {
     public int addComments(int id, List<Comment> comments) {
         return matchDB.insertComments(id, comments);
     }
+
+    public int deleteCommentById(int matchID, int commentID) {
+        return matchDB.deleteCommentById(matchID, commentID);
+    }
+
+    public int updateCommentById(int matchID, int commentID, Comment comment) {
+        return matchDB.updateCommentById(matchID, commentID, comment);
+    }
 }

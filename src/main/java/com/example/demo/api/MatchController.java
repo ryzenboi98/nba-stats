@@ -34,4 +34,15 @@ public class MatchController {
     public int addComments(@PathVariable("id") int id, @RequestBody List<Comment> comments) {
         return matchService.addComments(id, comments);
     }
+
+    @DeleteMapping(value = "/{id_m}/comment/{id_c}")
+    public int deleteComment(@PathVariable("id_m") int matchID, @PathVariable("id_c") int commentID) {
+        return matchService.deleteCommentById(matchID, commentID);
+    }
+
+    @PutMapping(value = "/{id_m}/comment/{id_c}")
+    public int updateComment(@PathVariable("id_m") int matchID, @PathVariable("id_c") int commentID,
+                             @RequestBody Comment comment) {
+        return matchService.updateCommentById(matchID, commentID, comment);
+    }
 }
