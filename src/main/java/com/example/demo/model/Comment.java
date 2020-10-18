@@ -7,9 +7,8 @@ public class Comment {
     private final String message;
     private final Timestamp date;
 
-    public Comment(int matchID, int id, String message, Timestamp date) {
+    public Comment(int id, String message, Timestamp date) {
         this.id = id;
-
         this.message = message;
         this.date = date;
     }

@@ -11,7 +11,7 @@ public class Match {
     private final String visitorTeam;
     private final int homeScore;
     private final int visitorScore;
-    private final ArrayList<Comment> comments = new ArrayList<Comment>();
+    private final List<Comment> comments = new ArrayList<Comment>();
 
     public Match(int id,
                  Timestamp date,
@@ -52,10 +52,10 @@ public class Match {
     }
 
     public void addComment(Comment comment) {
-        comments.add(comment);
+        comments.add(0, comment);
     }
 
-    public ArrayList<Comment> getAllComments() {
+    public List<Comment> getAllComments() {
         return comments;
     }
 

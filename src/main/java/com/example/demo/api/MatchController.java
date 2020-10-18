@@ -1,5 +1,6 @@
 package com.example.demo.api;
 
+import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import com.example.demo.service.MatchService;
 
@@ -27,5 +28,10 @@ public class MatchController {
     public Match getMatchByID(@PathVariable("id") int id) {
         return matchService.getMatchByID(id)
                 .orElse(null);
+    }
+
+    @PostMapping(value="/{id}/comment")
+    public int addComments(@PathVariable("id") int id, @RequestBody List<Comment> comments) {
+        return matchService.addComments(id, comments);
     }
 }

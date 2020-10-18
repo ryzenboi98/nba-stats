@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.fakedb.MatchDB;
+import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,5 +31,9 @@ public class MatchService {
 
     public Optional<Match> getMatchByID(int id) {
         return matchDB.selectMatchById(id);
+    }
+
+    public int addComments(int id, List<Comment> comments) {
+        return matchDB.insertComments(id, comments);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.demo.fakedb;
 
+import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import org.springframework.stereotype.Repository;
 
@@ -63,8 +64,51 @@ public class FakeMatchDatabaseService implements MatchDB {
 
     @Override
     public Optional<Match> selectMatchById(int id) {
+
+        System.out.println("OKEY");
         return matchDB.stream()
                 .filter(match -> match.getId() == id)
                 .findFirst();
+    }
+
+    @Override
+    public int insertComments(int matchID, List<Comment> comments) {
+        Match match = null;
+
+        System.out.println(matchID);
+
+        comments.forEach(System.out::println);
+        //System.out.println(comment.getMessage());
+
+        for(Match m : matchDB) {
+            if(m.getId() == matchID) {
+                match = m;
+            }
+        }
+
+        if(match != null) {
+            List<Comment> coms = match.getAllComments();
+            int id = 1;
+            Timestamp t = new Timestamp(System.currentTimeMillis());
+
+            if(coms.size() != 0) {
+                //System.out.println("YOLLO");
+                id = coms.get(coms.size() - 1).getId() + 1;
+
+                for(Comment com : comments) {
+                    Comment c = new Comment(id, com.getMessage(), t);
+                    match.addComment(c);
+                }
+
+            } else {
+                //System.out.println("YOLLO2");
+                for(Comment com : comments) {
+                    Comment c = new Comment(id, com.getMessage(), t);
+                    match.addComment(c);
+                }
+            }
+            return 1;
+        } else
+            return 0;
     }
 }

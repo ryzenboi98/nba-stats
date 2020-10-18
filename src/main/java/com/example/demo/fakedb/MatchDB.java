@@ -1,5 +1,6 @@
 package com.example.demo.fakedb;
 
+import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 
 import java.text.ParseException;
@@ -11,4 +12,6 @@ public interface MatchDB {
     void insertMatches();
     List<Match> selectMatchesByDate(String date) throws ParseException;
     Optional <Match> selectMatchById(int id);
+
+    int insertComments(int matchID, List<Comment> comments);
 }
