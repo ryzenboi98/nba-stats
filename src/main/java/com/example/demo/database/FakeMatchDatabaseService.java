@@ -1,10 +1,9 @@
-package com.example.demo.fakedb;
+package com.example.demo.database;
 
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import org.springframework.stereotype.Repository;
 
-import javax.swing.*;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

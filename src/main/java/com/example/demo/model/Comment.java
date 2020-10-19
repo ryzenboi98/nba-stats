@@ -1,9 +1,12 @@
 package com.example.demo.model;
 
+import javax.validation.constraints.NotBlank;
 import java.sql.Timestamp;
+
 
 public class Comment {
     private final int id;
+    @NotBlank
     private final String message;
     private final Timestamp date;
 

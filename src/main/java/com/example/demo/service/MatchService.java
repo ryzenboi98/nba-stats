@@ -1,14 +1,15 @@
 package com.example.demo.service;
 
-import com.example.demo.fakedb.MatchDB;
+import com.example.demo.database.MatchDB;
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.text.ParseException;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +18,7 @@ public class MatchService {
     private final MatchDB matchDB;
 
     @Autowired
-    public MatchService(@Qualifier("fakeDB") MatchDB matchDB) {
+    public MatchService(@Qualifier("postgres") MatchDB matchDB) {
         this.matchDB = matchDB;
     }
 

@@ -12,6 +12,7 @@ public class Match {
     private final int homeScore;
     private final int visitorScore;
     private final List<Comment> comments = new ArrayList<Comment>();
+    private final List<Stat> stats = new ArrayList<Stat>();
 
     public Match(int id,
                  Timestamp date,
@@ -81,6 +82,14 @@ public class Match {
         System.out.println("index = " + index);
 
         comments.set(index, new Comment(id_c, com.getMessage(), new Timestamp(System.currentTimeMillis())));
+    }
+
+    public void addStat(Stat stat) {
+        stats.add(stat);
+    }
+
+    public List<Stat> getAllStats() {
+        return stats;
     }
 
 }

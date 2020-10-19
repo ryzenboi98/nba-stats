@@ -6,6 +6,9 @@ import com.example.demo.service.MatchService;
 
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 
@@ -31,7 +34,7 @@ public class MatchController {
     }
 
     @PostMapping(value="/{id}/comment")
-    public int addComments(@PathVariable("id") int id, @RequestBody List<Comment> comments) {
+    public int addComments(@PathVariable("id") int id,  @Valid @NotNull @RequestBody List<Comment> comments) {
         return matchService.addComments(id, comments);
     }
 
@@ -42,7 +45,7 @@ public class MatchController {
 
     @PutMapping(value = "/{id_m}/comment/{id_c}")
     public int updateComment(@PathVariable("id_m") int matchID, @PathVariable("id_c") int commentID,
-                             @RequestBody Comment comment) {
+                             @Valid @NotNull @RequestBody Comment comment) {
         return matchService.updateCommentById(matchID, commentID, comment);
     }
 }
