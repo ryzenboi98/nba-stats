@@ -1,25 +1,19 @@
 package com.example.demo.model;
 
 public class Stat {
-    private final int i;
     private final String playerName;
-    private final String points;
+    private final int points;
 
-    public Stat(int i, String playerName, String points) {
-        this.i = i;
+    public Stat(String playerName, int points) {
         this.playerName = playerName;
         this.points = points;
-    }
-
-    public int getI() {
-        return i;
     }
 
     public String getPlayerName() {
         return playerName;
     }
 
-    public String getPoints() {
+    public int getPoints() {
         return points;
     }
 }

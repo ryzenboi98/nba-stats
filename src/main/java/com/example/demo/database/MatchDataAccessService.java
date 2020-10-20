@@ -3,6 +3,7 @@ package com.example.demo.database;
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 
+import com.example.demo.model.Stat;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -24,6 +25,7 @@ import java.util.*;
 public class MatchDataAccessService implements MatchDB{
 
     private final JdbcTemplate jdbcTemplate;
+    private final String baseURL = "https://rapidapi.p.rapidapi.com/";
 
     public MatchDataAccessService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -31,106 +33,96 @@ public class MatchDataAccessService implements MatchDB{
 
     @Override
     public void insertMatches() {
-        // Check if there's data on the database
-        if(!databaseIsEmpty())
-            return;
 
-        // Request for all the first 25 NBA matches
-        String response = getMatchesRapidAPI();
-
-        // Parse response to Matches JSON data
-        JSONArray jsonMatchesArray = parseMatchesData(response);
-
-        // Insertion of the all the Matches in the postgresql database
-        insertMatchesData(jsonMatchesArray);
     }
 
     @Override
     public List<Match> selectMatchesByDate(String date) throws ParseException {
+        String urlPath = "games?";
+        String params = "dates[]=" + date;
 
-        List<Match> matches = null;
+        // Request for RapidAPI
+        String response = requestRapidAPI(urlPath, params);
 
-        if(date != null) {
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
-            Date dt = fmt.parse((String) date);
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = null;
 
-            String sql = "select * " +
-                    "from matches where m_date = ?;";
-
-
-            matches = jdbcTemplate.query(sql, new Object[]{dt}, (resultSet, i) -> {
-                int id = Integer.parseInt(resultSet.getString("match_id"));
-                String homeTeam = resultSet.getString("home_team");
-                String visitorTeam = resultSet.getString("visitor_team");
-                int homeScore = Integer.parseInt(resultSet.getString("home_score"));
-                int visitorScore = Integer.parseInt(resultSet.getString("visitor_score"));
-                // Make parse String to Date function
-                Timestamp dat = parseStringToTimestamp(resultSet.getString("m_date"));
-
-                return new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, dat);
-            });
-        }
-        else {
-            String sql = "select * from matches;";
-
-            matches = jdbcTemplate.query(sql, (resultSet, i) -> {
-                int id = Integer.parseInt(resultSet.getString("match_id"));
-                String homeTeam = resultSet.getString("home_team");
-                String visitorTeam = resultSet.getString("visitor_team");
-                int homeScore = Integer.parseInt(resultSet.getString("home_score"));
-                int visitorScore = Integer.parseInt(resultSet.getString("visitor_score"));
-                // Make parse String to Date function
-                Timestamp dat = parseStringToTimestamp(resultSet.getString("m_date"));
-
-                return new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, dat);
-            });
+        try {
+            jsonObject = (JSONObject) parser.parse(response);
+        } catch (org.json.simple.parser.ParseException e) {
+            e.printStackTrace();
         }
 
-        for(Match m : matches) {
-            String sql_ = "select * from comments where match_id = ? order by c_date desc;";
+        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
 
-            List<Comment> comments = jdbcTemplate.query(sql_, new Object[]{m.getId()}, (resultSet, i) -> {
-                int commentID = Integer.parseInt(resultSet.getString("comment_id"));
-                String message = resultSet.getString("comment");
-                Timestamp time = parseStringToTimestamp(resultSet.getString("c_date"));
+        Iterator<JSONObject> it = jsonMatchesArray.iterator();
 
-                return new Comment(commentID, message, time);
-            });
+        List<Match> matchList = new ArrayList<Match>();
 
-            for (Comment com : comments)
-                m.addComment(com);
+        while (it.hasNext()) {
+            JSONObject jsonObj = it.next();
+
+            Match match = getMatchData(jsonObj);
+            matchList.add(match);
         }
-        return matches;
+
+        return matchList;
     }
 
     @Override
     public Optional<Match> selectMatchById(int id) {
-        String sql = "select * from matches where match_id = ?;";
+        String urlPath = "games/";
+        String params = String.valueOf(id);
 
-        Match match = jdbcTemplate.queryForObject(sql, new Object[] {id},
-                (resultSet, i) -> {
-                    int matchID = Integer.parseInt(resultSet.getString("match_id"));
-                    String homeTeam = resultSet.getString("home_team");
-                    String visitorTeam = resultSet.getString("visitor_team");
-                    int homeScore = Integer.parseInt(resultSet.getString("home_score"));
-                    int visitorScore = Integer.parseInt(resultSet.getString("visitor_score"));
-                    Timestamp date = parseStringToTimestamp(resultSet.getString("m_date"));
+        // Request for RapidAPI
+        String response = requestRapidAPI(urlPath, params);
 
-                    return new Match(matchID, homeTeam, visitorTeam, homeScore, visitorScore, date);
-                });
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObj = null;
 
-        sql = "select * from comments where match_id = ? order by c_date desc;";
+        try {
+            jsonObj = (JSONObject) parser.parse(response);
+        } catch (org.json.simple.parser.ParseException e) {
+            e.printStackTrace();
+        }
 
-        List<Comment> comments = jdbcTemplate.query(sql, new Object[] {id}, (resultSet, i) -> {
-            int commentID = Integer.parseInt(resultSet.getString("comment_id"));
-            String message = resultSet.getString("comment");
-            Timestamp time = parseStringToTimestamp(resultSet.getString("c_date"));
+        Match match = getMatchData(jsonObj);
 
-            return new Comment(commentID, message, time);
-        });
+        urlPath = "stats/?per_page=100&";
+        params = "game_ids[]=" + id;
 
-        for(Comment com : comments)
-            match.addComment(com);
+        response = requestRapidAPI(urlPath, params);
+
+        try {
+            jsonObj = (JSONObject) parser.parse(response);
+        } catch (org.json.simple.parser.ParseException e) {
+            e.printStackTrace();
+        }
+
+        JSONArray jsonPlayerStats = (JSONArray) jsonObj.get("data");
+
+        Iterator<JSONObject> it = jsonPlayerStats.iterator();
+
+        List<Stat> statsList = new ArrayList<>();
+
+        int sum = 0;
+        while(it.hasNext()) {
+            JSONObject jsonObject = it.next();
+
+            if(jsonObject.get("pts") != null)
+                if(Math.toIntExact((Long) jsonObject.get("pts")) > 0) {
+                    Stat stat = new Stat((String) ((JSONObject) jsonObject.get("player")).get("first_name") + " " +
+                            ((JSONObject) jsonObject.get("player")).get("last_name"), Math.toIntExact((Long) jsonObject.get("pts")));
+
+                    statsList.add(stat);
+                }
+        }
+
+        statsList.sort(Comparator.comparing(Stat::getPoints).reversed());
+
+        for(Stat s : statsList) {
+            match.addStat(s);
+        }
 
         return Optional.ofNullable(match);
     }
@@ -232,17 +224,16 @@ public class MatchDataAccessService implements MatchDB{
     }
 
 
-    private String getMatchesRapidAPI() {
-        // Request for all the first 25 NBA matches
+
+    private String requestRapidAPI(String urlPath, String params) {
+        // Request for RapidAPI
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://rapidapi.p.rapidapi.com/games?page=0&per_page=25"))
+                .uri(URI.create(baseURL + urlPath + params))
                 .header("x-rapidapi-host", "free-nba.p.rapidapi.com")
                 .header("x-rapidapi-key", "01e155481bmsh90337a24070211fp1b6327jsn44661d7fec09")
                 .method("GET", HttpRequest.BodyPublishers.noBody())
                 .build();
-
         HttpResponse<String> response = null;
-
         try {
             response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
@@ -250,6 +241,26 @@ public class MatchDataAccessService implements MatchDB{
         }
 
         return response.body();
+    }
+
+    private Match getMatchData(JSONObject jsonObject) {
+        int id = Math.toIntExact((Long) jsonObject.get("id"));
+        String homeTeam = (String) ((JSONObject) jsonObject.get("home_team")).get("full_name");
+        String visitorTeam = (String) ((JSONObject) jsonObject.get("visitor_team")).get("full_name");
+        int homeScore = Math.toIntExact((Long) jsonObject.get("home_team_score"));
+        int visitorScore = Math.toIntExact((Long) jsonObject.get("visitor_team_score"));
+
+        SimpleDateFormat format;
+
+        if(jsonObject.get("date").toString().contains("Z"))
+            format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        else
+            format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+
+        Timestamp d = parseStringToTimestamp((String) jsonObject.get("date"), format);
+        Match match = new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, d);
+
+        return  match;
     }
 
     private JSONArray parseMatchesData(String response) {
@@ -276,7 +287,7 @@ public class MatchDataAccessService implements MatchDB{
             int id = Math.toIntExact((Long) jsonObj.get("id"));
 
             //Timestamp date = Timestamp.valueOf((String) jsonObj.get("date"));
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS UTC");
 
             Date d = new Date();
             Timestamp date;
@@ -322,18 +333,24 @@ public class MatchDataAccessService implements MatchDB{
         return new Timestamp(System.currentTimeMillis());
     }
 
-    private Timestamp parseStringToTimestamp(String date) {
+    private Timestamp parseStringToTimestamp(String date, SimpleDateFormat format) {
         Date d = new Date();
         Timestamp dat;
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        if(format == null) {
+            format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        }
 
         try {
             d = format.parse((String) date);
         } catch (ParseException e) {
             e.printStackTrace();
         }
+
         dat = new Timestamp(d.getTime());
+
+        //dat = Timestamp.valueOf(date);
 
         return dat;
     }
