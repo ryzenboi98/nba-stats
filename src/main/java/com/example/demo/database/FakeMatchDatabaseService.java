@@ -20,20 +20,20 @@ public class FakeMatchDatabaseService implements MatchDB {
 
     @Override
     public void insertMatches() {
-        Match m1 = new Match(1, new Timestamp(System.currentTimeMillis()),
-                "Lakers", "Angels", 112, 108);
-        Match m2 = new Match(2, new Timestamp(System.currentTimeMillis()),
-                "Sanderns", "Diab", 79, 90);
-        Match m3 = new Match(3, new Timestamp(System.currentTimeMillis()),
-                "Qertz", "Giants", 130, 112);
-        Match m4 = new Match(4, new Timestamp(System.currentTimeMillis()),
-                "LA", "Thiefs", 100, 106);
-        Match m5 = new Match(5, new Timestamp(System.currentTimeMillis()),
-                "Thiefs", "Lakers", 112, 98);
-        Match m6 = new Match(6, new Timestamp(System.currentTimeMillis()),
-                "Qertz", "Angels", 107, 100);
-        Match m7 = new Match(7, new Timestamp(System.currentTimeMillis()),
-                "Diab", "Sanderns", 99, 97);
+        Match m1 = new Match(1, "Lakers", "Angels",
+                112, 108, new Timestamp(System.currentTimeMillis()));
+        Match m2 = new Match(2,"Sanderns", "Diab",
+                79, 90 , new Timestamp(System.currentTimeMillis()));
+        Match m3 = new Match(3, "Qertz", "Giants",
+                130, 112, new Timestamp(System.currentTimeMillis()));
+        Match m4 = new Match(4, "LA", "Thiefs",
+                100, 106, new Timestamp(System.currentTimeMillis()));
+        Match m5 = new Match(5, "Thiefs", "Lakers",
+                112, 98, new Timestamp(System.currentTimeMillis()));
+        Match m6 = new Match(6, "Qertz", "Angels",
+                107, 100, new Timestamp(System.currentTimeMillis()));
+        Match m7 = new Match(7, "Diab", "Sanderns",
+                99, 97, new Timestamp(System.currentTimeMillis()));
 
         matchDB.add(m1);
         matchDB.add(m2);

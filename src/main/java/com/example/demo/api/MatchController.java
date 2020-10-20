@@ -23,12 +23,12 @@ public class MatchController {
     }
 
     @GetMapping
-    public List<Match> getMatchesByDate(@RequestParam(required = false) String date) throws ParseException {
+    public List<Match> getMatchesByDate(@Valid @NotNull @RequestParam(required = false) String date) throws ParseException {
         return matchService.getMatchesByDate(date);
     }
 
     @GetMapping(path="{id}")
-    public Match getMatchByID(@PathVariable("id") int id) {
+    public Match getMatchByID(@Valid @NotNull @PathVariable("id") int id) {
         return matchService.getMatchByID(id)
                 .orElse(null);
     }
