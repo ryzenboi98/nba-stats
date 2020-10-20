@@ -2,6 +2,7 @@ package com.example.demo.database;
 
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -9,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
-import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,94 +31,18 @@ public class MatchDataAccessService implements MatchDB{
 
     @Override
     public void insertMatches() {
-        String sql_count = "select COUNT(*) from matches;";
-
-        int rows = jdbcTemplate.queryForObject(sql_count, Integer.class);
-
-        if(rows != 0)
+        // Check if there's data on the database
+        if(!databaseIsEmpty())
             return;
 
         // Request for all the first 25 NBA matches
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://rapidapi.p.rapidapi.com/games?page=0&per_page=25"))
-                .header("x-rapidapi-host", "free-nba.p.rapidapi.com")
-                .header("x-rapidapi-key", "01e155481bmsh90337a24070211fp1b6327jsn44661d7fec09")
-                .method("GET", HttpRequest.BodyPublishers.noBody())
-                .build();
-        HttpResponse<String> response = null;
-        try {
-            response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        String response = getMatchesRapidAPI();
 
-        System.out.println(response.body());
-        System.out.println("Type: " + response.body().getClass());
-
-        JSONParser parser = new JSONParser();
-
-        JSONObject jsonObject = null;
-
-        try {
-            jsonObject = (JSONObject) parser.parse(response.body());
-        } catch (org.json.simple.parser.ParseException e) {
-            e.printStackTrace();
-        }
-
+        // Parse response to Matches JSON data
+        JSONArray jsonMatchesArray = parseMatchesData(response);
 
         // Insertion of the all the Matches in the postgresql database
-        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
-
-        Iterator<JSONObject> it =  jsonMatchesArray.iterator();
-
-        while (it.hasNext()) {
-            JSONObject jsonObj = it.next();
-
-            int id = Math.toIntExact((Long) jsonObj.get("id"));
-
-            //Timestamp date = Timestamp.valueOf((String) jsonObj.get("date"));
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
-            Date d = new Date();
-            Timestamp date;
-            //LocalDateTime date = LocalDateTime.parse((String) jsonObj.get("date"));
-
-            try {
-                d = format.parse((String) jsonObj.get("date"));
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            date = new Timestamp(d.getTime());
-
-            String homeTeam = (String) ((JSONObject) jsonObj.get("home_team")).get("full_name");
-            String visitorTeam = (String) ((JSONObject) jsonObj.get("visitor_team")).get("full_name");
-            int homeScore = Math.toIntExact((Long) jsonObj.get("home_team_score"));
-            int visitorScore = Math.toIntExact((Long) jsonObj.get("visitor_team_score"));
-
-            Match match = new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, date);
-
-            String sql = "" +
-                    "INSERT INTO Matches (" +
-                    " match_id, " +
-                    " home_team, " +
-                    " visitor_team, " +
-                    " home_score, " +
-                    " visitor_score," +
-                    " m_date)" +
-                    "VALUES (?, ?, ?, ?, ?, ?);";
-
-            jdbcTemplate.update(
-                    sql,
-                    match.getId(),
-                    match.getHomeTeam(),
-                    match.getVisitorTeam(),
-                    match.getHomeScore(),
-                    match.getVisitorScore(),
-                    match.getDate()
-            );
-        }
+        insertMatchesData(jsonMatchesArray);
     }
 
     @Override
@@ -285,13 +209,117 @@ public class MatchDataAccessService implements MatchDB{
         int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
 
         if(rows > 0) {
-            String sql = "update comments set comment = ? where match_id = ? and comment_id = ?";
-            jdbcTemplate.update(sql, comment.getMessage(), matchID, commentID);
+            String sql = "update comments set comment = ?, c_date = ? where match_id = ? and comment_id = ?;";
+
+            System.out.println(getCurrentTime());
+            jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
 
             return 1;
         } else {
             return 0;
         }
+    }
+
+    private boolean databaseIsEmpty() {
+        String sql_count = "select COUNT(*) from matches;";
+
+        int rows = jdbcTemplate.queryForObject(sql_count, Integer.class);
+
+        if(rows > 0)
+            return false;
+        else
+            return true;
+    }
+
+
+    private String getMatchesRapidAPI() {
+        // Request for all the first 25 NBA matches
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://rapidapi.p.rapidapi.com/games?page=0&per_page=25"))
+                .header("x-rapidapi-host", "free-nba.p.rapidapi.com")
+                .header("x-rapidapi-key", "01e155481bmsh90337a24070211fp1b6327jsn44661d7fec09")
+                .method("GET", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = null;
+
+        try {
+            response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return response.body();
+    }
+
+    private JSONArray parseMatchesData(String response) {
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = null;
+
+        try {
+            jsonObject = (JSONObject) parser.parse(response);
+        } catch (org.json.simple.parser.ParseException e) {
+            e.printStackTrace();
+        }
+
+        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
+
+        return jsonMatchesArray;
+    }
+
+    private void insertMatchesData(JSONArray jsonMatchesArray) {
+        Iterator<JSONObject> it =  jsonMatchesArray.iterator();
+
+        while (it.hasNext()) {
+            JSONObject jsonObj = it.next();
+
+            int id = Math.toIntExact((Long) jsonObj.get("id"));
+
+            //Timestamp date = Timestamp.valueOf((String) jsonObj.get("date"));
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+            Date d = new Date();
+            Timestamp date;
+            //LocalDateTime date = LocalDateTime.parse((String) jsonObj.get("date"));
+
+            try {
+                d = format.parse((String) jsonObj.get("date"));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            date = new Timestamp(d.getTime());
+
+            String homeTeam = (String) ((JSONObject) jsonObj.get("home_team")).get("full_name");
+            String visitorTeam = (String) ((JSONObject) jsonObj.get("visitor_team")).get("full_name");
+            int homeScore = Math.toIntExact((Long) jsonObj.get("home_team_score"));
+            int visitorScore = Math.toIntExact((Long) jsonObj.get("visitor_team_score"));
+
+            Match match = new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, date);
+
+            String sql = "" +
+                    "INSERT INTO Matches (" +
+                    " match_id, " +
+                    " home_team, " +
+                    " visitor_team, " +
+                    " home_score, " +
+                    " visitor_score," +
+                    " m_date)" +
+                    "VALUES (?, ?, ?, ?, ?, ?);";
+
+            jdbcTemplate.update(
+                    sql,
+                    match.getId(),
+                    match.getHomeTeam(),
+                    match.getVisitorTeam(),
+                    match.getHomeScore(),
+                    match.getVisitorScore(),
+                    match.getDate()
+            );
+        }
+    }
+
+    private Timestamp getCurrentTime() {
+        return new Timestamp(System.currentTimeMillis());
     }
 
     private Timestamp parseStringToTimestamp(String date) {
