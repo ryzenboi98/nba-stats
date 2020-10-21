@@ -41,30 +41,33 @@ public class MatchDataAccessService implements MatchDB{
         String urlPath = "games?";
         String params = "dates[]=" + date;
 
+        List<Integer> matchesIDs = new ArrayList<>();
+        List<Match> matchList = new ArrayList<Match>();
+        List<Stat> statsList = new ArrayList<>();
+
         // Request for RapidAPI
         String response = requestRapidAPI(urlPath, params);
 
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject = null;
+        // Add all matches requested from the RapidAPI
+        addMatchesRapidAPI(response, matchList, matchesIDs);
 
-        try {
-            jsonObject = (JSONObject) parser.parse(response);
-        } catch (org.json.simple.parser.ParseException e) {
-            e.printStackTrace();
-        }
+        urlPath = "stats/?per_page=100";
+        params = "";
 
-        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
+        for(Integer matchID : matchesIDs)
+            params = params + "&game_ids[]=" + matchID;
 
-        Iterator<JSONObject> it = jsonMatchesArray.iterator();
+        // Get all Stats for the returned Matches
+        response = requestRapidAPI(urlPath, params);
 
-        List<Match> matchList = new ArrayList<Match>();
+        // Add all Stats from the first page result
+        addStatsFirstPage(response, statsList);
 
-        while (it.hasNext()) {
-            JSONObject jsonObj = it.next();
+        // Add all Stats for the rest pages results
+        addStatsNextPages(response, statsList, params);
 
-            Match match = getMatchData(jsonObj);
-            matchList.add(match);
-        }
+        // Add all Stats for each correspondent Match
+        addAllStatsToMatches(matchList, statsList);
 
         return matchList;
     }
@@ -105,7 +108,6 @@ public class MatchDataAccessService implements MatchDB{
 
         List<Stat> statsList = new ArrayList<>();
 
-        int sum = 0;
         while(it.hasNext()) {
             JSONObject jsonObject = it.next();
 
@@ -124,21 +126,37 @@ public class MatchDataAccessService implements MatchDB{
             match.addStat(s);
         }
 
+        String sql = "select * from comments where match_id = ? order by c_date desc;";
+
+        List<Comment> comments = jdbcTemplate.query(sql, new Object[] {id},
+                ((resultSet, i) -> {
+                    int comment_id = Integer.parseInt(resultSet.getString("comment_id"));
+                    String message = resultSet.getString("comment");
+                    Timestamp date = parseStringToTimestamp(resultSet.getString("c_date"), null);
+
+                    return new Comment(comment_id, message, date);
+                })
+        );
+
+        match.addComments(comments);
+
         return Optional.ofNullable(match);
     }
 
     @Override
     public int insertComments(int matchID, List<Comment> comments) {
-        String sql_count = "select count(*) from matches where match_id = ?;";
+        Optional<Match> m = selectMatchById(matchID);
 
-        int matchRows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID}, Integer.class);
+        int commentsRows = 0;
 
-        sql_count = "select count(*) from comments;";
+        if(!m.isEmpty() && !comments.isEmpty()) {
+            // Get number of Comments rows for a the specified Match
+            String sql_count = "select count(*) from comments where match_id = ?;";
+            commentsRows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID} , Integer.class);
 
-        int commentsRows = jdbcTemplate.queryForObject(sql_count, Integer.class);
-
-        if(matchRows != 0) {
             int id = 1;
+
+
 
             if(commentsRows != 0) {
                 String sql_id = "select max(comment_id) from comments where match_id = ?;";
@@ -153,25 +171,21 @@ public class MatchDataAccessService implements MatchDB{
                     " c_date) " +
                     "VALUES (?, ?, ?, ?);";
 
-            if(!comments.isEmpty()) {
-                System.out.println("YOOOOOOO ITS ME");
-                Timestamp time = new Timestamp(System.currentTimeMillis());
+            System.out.println("YOOOOOOO ITS ME");
 
-                for(Comment com : comments) {
-                    jdbcTemplate.update(
-                            sql,
-                            id,
-                            matchID,
-                            com.getMessage(),
-                            time
+            for(Comment com : comments) {
+                jdbcTemplate.update(
+                        sql,
+                        id,
+                        matchID,
+                        com.getMessage(),
+                        getCurrentTime()
                     );
                     id++;
                 }
                 return 1;
-            } else {
-                return 0;
-            }
         } else {
+            // There is no Match with such ID
             return 0;
         }
     }
@@ -205,7 +219,6 @@ public class MatchDataAccessService implements MatchDB{
 
             System.out.println(getCurrentTime());
             jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
-
             return 1;
         } else {
             return 0;
@@ -243,6 +256,32 @@ public class MatchDataAccessService implements MatchDB{
         return response.body();
     }
 
+    private List<Comment> getCommentsByMatchID(int matchID) {
+        String sql = "select * from comments where match_id = ? order by c_date desc;";
+
+        List<Comment> comments = jdbcTemplate.query(sql, new Object[] {matchID},
+                ((resultSet, i) -> {
+                    int comment_id = Integer.parseInt(resultSet.getString("comment_id"));
+                    String message = resultSet.getString("comment");
+                    Timestamp d = parseStringToTimestamp(resultSet.getString("c_date"), null);
+
+                    return new Comment(comment_id, message, d);
+                })
+        );
+
+        return comments;
+    }
+
+    private boolean playerScoredPoints(JSONObject jsonObject) {
+        if (jsonObject.get("pts") != null)
+            if(Math.toIntExact((Long) jsonObject.get("pts")) > 0)
+                return true;
+            else
+                return false;
+        else
+            return false;
+    }
+
     private Match getMatchData(JSONObject jsonObject) {
         int id = Math.toIntExact((Long) jsonObject.get("id"));
         String homeTeam = (String) ((JSONObject) jsonObject.get("home_team")).get("full_name");
@@ -263,6 +302,63 @@ public class MatchDataAccessService implements MatchDB{
         return  match;
     }
 
+    private Stat getStatData(JSONObject jsonObject) {
+        Stat stat = new Stat((String) ((JSONObject) jsonObject.get("player")).get("first_name") + " " +
+                        ((JSONObject) jsonObject.get("player")).get("last_name"), Math.toIntExact((Long) jsonObject.get("pts")));
+
+        int matchID = (Math.toIntExact((Long) ((JSONObject) jsonObject.get("game")).get("id")));
+        stat.setMatchID(matchID);
+
+        return stat;
+
+    }
+
+    private void addAllStatsToMatches(List<Match> matchList, List<Stat> statsList) {
+        for (Match m : matchList) {
+            List<Stat> stats = new ArrayList<>();
+            for (Stat s : statsList) {
+                if (s.getMatchID() == m.getId()) {
+                    stats.add(s);
+                }
+            }
+            stats.sort(Comparator.comparing(Stat::getPoints).reversed());
+            m.addStats(stats);
+        }
+    }
+
+    private void addMatchesRapidAPI(String response, List<Match> matchList, List<Integer> matchesIDs) {
+        JSONObject jsonObject = parseStringToJSON(response);
+        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
+
+        Iterator<JSONObject> it = jsonMatchesArray.iterator();
+
+        while (it.hasNext()) {
+            JSONObject jsonObj = it.next();
+
+            matchesIDs.add(Math.toIntExact((Long) jsonObj.get("id")));
+            Match match = getMatchData(jsonObj);
+
+            // Get all comments and add to the specific Match
+            List<Comment> comments = getCommentsByMatchID(match.getId());
+            match.addComments(comments);
+
+            matchList.add(match);
+        }
+    }
+
+    private JSONObject parseStringToJSON(String response) {
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = null;
+
+        try {
+            jsonObject = (JSONObject) parser.parse(response);
+        } catch (org.json.simple.parser.ParseException e) {
+            e.printStackTrace();
+        }
+
+        return jsonObject;
+    }
+
     private JSONArray parseMatchesData(String response) {
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = null;
@@ -276,6 +372,54 @@ public class MatchDataAccessService implements MatchDB{
         JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
 
         return jsonMatchesArray;
+    }
+
+    private void addStatsFirstPage(String response, List<Stat> statsList) {
+        JSONObject jsonObject = parseStringToJSON(response);
+        JSONArray statsArray = (JSONArray) jsonObject.get("data");
+
+        Iterator<JSONObject> it = statsArray.iterator();
+
+        while(it.hasNext()) {
+            JSONObject jsonObj = it.next();
+
+            //System.out.println("Object value: ->" + jsonObject.get("pts") + "   pts -> " + Math.toIntExact((Long) jsonObject.get("pts")));
+
+            // Check if players scored points in the match
+            if(playerScoredPoints(jsonObj)) {
+                Stat stat = getStatData(jsonObj);
+                statsList.add(stat);
+            }
+        }
+    }
+
+    private void addStatsNextPages(String response, List<Stat> statsList, String params) {
+        JSONObject jsonObject = parseStringToJSON(response);
+        JSONArray statsArray = (JSONArray) jsonObject.get("data");
+
+        int totalPages = Math.toIntExact((Long) (((JSONObject) jsonObject.get("meta")).get("total_pages")));
+
+        for(int i = 1; i < totalPages; i++) {
+            String urlPath = "stats/?per_page=100" + "&page=" + (i+1);
+
+            response = requestRapidAPI(urlPath, params);
+
+            jsonObject = parseStringToJSON(response);
+            statsArray = (JSONArray) jsonObject.get("data");
+
+            Iterator<JSONObject> it = statsArray.iterator();
+
+            while(it.hasNext()) {
+                JSONObject jsonObj = it.next();
+
+                if(playerScoredPoints(jsonObj)) {
+                    Stat stat = getStatData(jsonObj);
+                    statsList.add(stat);
+                }
+            }
+        }
+
+
     }
 
     private void insertMatchesData(JSONArray jsonMatchesArray) {

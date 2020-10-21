@@ -69,6 +69,10 @@ public class Match {
         return null;
     }
 
+    public void addComments(List<Comment> com) {
+        comments.addAll(com);
+    }
+
     public void deleteComment(Comment com) {
         comments.remove(com);
     }
@@ -85,6 +89,10 @@ public class Match {
 
     public void addStat(Stat stat) {
         stats.add(stat);
+    }
+
+    public void addStats(List<Stat> s) {
+        stats.addAll(s);
     }
 
     public List<Stat> getAllStats() {
