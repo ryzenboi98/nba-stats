@@ -24,8 +24,8 @@ import java.util.*;
 @Repository("postgres")
 public class MatchDataAccessService implements MatchDB{
 
-    private final JdbcTemplate jdbcTemplate;
     private final String baseURL = "https://rapidapi.p.rapidapi.com/";
+    private final JdbcTemplate jdbcTemplate;
 
     public MatchDataAccessService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -48,8 +48,8 @@ public class MatchDataAccessService implements MatchDB{
         // Request for RapidAPI
         String response = requestRapidAPI(urlPath, params);
 
-        // Add all matches requested from the RapidAPI
-        addMatchesRapidAPI(response, matchList, matchesIDs);
+        // Add all matches requested from the RapidAPI and all comments requested from DB
+        addMatchComsRapidAPI(response, matchList, matchesIDs);
 
         urlPath = "stats/?per_page=100";
         params = "";
@@ -77,18 +77,15 @@ public class MatchDataAccessService implements MatchDB{
         String urlPath = "games/";
         String params = String.valueOf(id);
 
+        List<Stat> statsList = new ArrayList<>();
+        List<Comment> comments = new ArrayList<>();
+
         // Request for RapidAPI
         String response = requestRapidAPI(urlPath, params);
 
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObj = null;
+        JSONObject jsonObj = parseStringToJSON(response);
 
-        try {
-            jsonObj = (JSONObject) parser.parse(response);
-        } catch (org.json.simple.parser.ParseException e) {
-            e.printStackTrace();
-        }
-
+        //Get the data for the Match specified by ID
         Match match = getMatchData(jsonObj);
 
         urlPath = "stats/?per_page=100&";
@@ -96,48 +93,13 @@ public class MatchDataAccessService implements MatchDB{
 
         response = requestRapidAPI(urlPath, params);
 
-        try {
-            jsonObj = (JSONObject) parser.parse(response);
-        } catch (org.json.simple.parser.ParseException e) {
-            e.printStackTrace();
-        }
+        addStatsFirstPage(response, statsList);
 
-        JSONArray jsonPlayerStats = (JSONArray) jsonObj.get("data");
-
-        Iterator<JSONObject> it = jsonPlayerStats.iterator();
-
-        List<Stat> statsList = new ArrayList<>();
-
-        while(it.hasNext()) {
-            JSONObject jsonObject = it.next();
-
-            if(jsonObject.get("pts") != null)
-                if(Math.toIntExact((Long) jsonObject.get("pts")) > 0) {
-                    Stat stat = new Stat((String) ((JSONObject) jsonObject.get("player")).get("first_name") + " " +
-                            ((JSONObject) jsonObject.get("player")).get("last_name"), Math.toIntExact((Long) jsonObject.get("pts")));
-
-                    statsList.add(stat);
-                }
-        }
-
+        // Sort stats list by player points
         statsList.sort(Comparator.comparing(Stat::getPoints).reversed());
+        match.addStats(statsList);
 
-        for(Stat s : statsList) {
-            match.addStat(s);
-        }
-
-        String sql = "select * from comments where match_id = ? order by c_date desc;";
-
-        List<Comment> comments = jdbcTemplate.query(sql, new Object[] {id},
-                ((resultSet, i) -> {
-                    int comment_id = Integer.parseInt(resultSet.getString("comment_id"));
-                    String message = resultSet.getString("comment");
-                    Timestamp date = parseStringToTimestamp(resultSet.getString("c_date"), null);
-
-                    return new Comment(comment_id, message, date);
-                })
-        );
-
+        comments = getCommentsByMatchID(id);
         match.addComments(comments);
 
         return Optional.ofNullable(match);
@@ -147,43 +109,13 @@ public class MatchDataAccessService implements MatchDB{
     public int insertComments(int matchID, List<Comment> comments) {
         Optional<Match> m = selectMatchById(matchID);
 
-        int commentsRows = 0;
-
         if(!m.isEmpty() && !comments.isEmpty()) {
-            // Get number of Comments rows for a the specified Match
-            String sql_count = "select count(*) from comments where match_id = ?;";
-            commentsRows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID} , Integer.class);
+            int id = getInsertionID(matchID);
 
-            int id = 1;
+            // Insert comments in the database
+            insertCommentsDB(comments, id, matchID);
 
-
-
-            if(commentsRows != 0) {
-                String sql_id = "select max(comment_id) from comments where match_id = ?;";
-                id = jdbcTemplate.queryForObject(sql_id, new Object[]{matchID}, Integer.class) + 1;
-            }
-
-            String sql = "" +
-                    "INSERT INTO Comments (" +
-                    " comment_id, " +
-                    " match_id, " +
-                    " comment, " +
-                    " c_date) " +
-                    "VALUES (?, ?, ?, ?);";
-
-            System.out.println("YOOOOOOO ITS ME");
-
-            for(Comment com : comments) {
-                jdbcTemplate.update(
-                        sql,
-                        id,
-                        matchID,
-                        com.getMessage(),
-                        getCurrentTime()
-                    );
-                    id++;
-                }
-                return 1;
+            return 1;
         } else {
             // There is no Match with such ID
             return 0;
@@ -210,33 +142,19 @@ public class MatchDataAccessService implements MatchDB{
     public int updateCommentById(int matchID, int commentID, Comment comment) {
         String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
 
-        System.out.println("CommentID -> " + commentID);
+        //System.out.println("CommentID -> " + commentID);
 
         int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
 
         if(rows > 0) {
             String sql = "update comments set comment = ?, c_date = ? where match_id = ? and comment_id = ?;";
 
-            System.out.println(getCurrentTime());
             jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
             return 1;
         } else {
             return 0;
         }
     }
-
-    private boolean databaseIsEmpty() {
-        String sql_count = "select COUNT(*) from matches;";
-
-        int rows = jdbcTemplate.queryForObject(sql_count, Integer.class);
-
-        if(rows > 0)
-            return false;
-        else
-            return true;
-    }
-
-
 
     private String requestRapidAPI(String urlPath, String params) {
         // Request for RapidAPI
@@ -252,7 +170,6 @@ public class MatchDataAccessService implements MatchDB{
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-
         return response.body();
     }
 
@@ -268,7 +185,6 @@ public class MatchDataAccessService implements MatchDB{
                     return new Comment(comment_id, message, d);
                 })
         );
-
         return comments;
     }
 
@@ -326,7 +242,7 @@ public class MatchDataAccessService implements MatchDB{
         }
     }
 
-    private void addMatchesRapidAPI(String response, List<Match> matchList, List<Integer> matchesIDs) {
+    private void addMatchComsRapidAPI(String response, List<Match> matchList, List<Integer> matchesIDs) {
         JSONObject jsonObject = parseStringToJSON(response);
         JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
 
@@ -418,59 +334,42 @@ public class MatchDataAccessService implements MatchDB{
                 }
             }
         }
-
-
     }
 
-    private void insertMatchesData(JSONArray jsonMatchesArray) {
-        Iterator<JSONObject> it =  jsonMatchesArray.iterator();
+    private void insertCommentsDB(List<Comment> comments, int id, int matchID) {
+        String sql = "" +
+                "INSERT INTO Comments (" +
+                " comment_id, " +
+                " match_id, " +
+                " comment, " +
+                " c_date) " +
+                "VALUES (?, ?, ?, ?);";
 
-        while (it.hasNext()) {
-            JSONObject jsonObj = it.next();
-
-            int id = Math.toIntExact((Long) jsonObj.get("id"));
-
-            //Timestamp date = Timestamp.valueOf((String) jsonObj.get("date"));
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS UTC");
-
-            Date d = new Date();
-            Timestamp date;
-            //LocalDateTime date = LocalDateTime.parse((String) jsonObj.get("date"));
-
-            try {
-                d = format.parse((String) jsonObj.get("date"));
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            date = new Timestamp(d.getTime());
-
-            String homeTeam = (String) ((JSONObject) jsonObj.get("home_team")).get("full_name");
-            String visitorTeam = (String) ((JSONObject) jsonObj.get("visitor_team")).get("full_name");
-            int homeScore = Math.toIntExact((Long) jsonObj.get("home_team_score"));
-            int visitorScore = Math.toIntExact((Long) jsonObj.get("visitor_team_score"));
-
-            Match match = new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, date);
-
-            String sql = "" +
-                    "INSERT INTO Matches (" +
-                    " match_id, " +
-                    " home_team, " +
-                    " visitor_team, " +
-                    " home_score, " +
-                    " visitor_score," +
-                    " m_date)" +
-                    "VALUES (?, ?, ?, ?, ?, ?);";
-
+        for(Comment com : comments) {
             jdbcTemplate.update(
                     sql,
-                    match.getId(),
-                    match.getHomeTeam(),
-                    match.getVisitorTeam(),
-                    match.getHomeScore(),
-                    match.getVisitorScore(),
-                    match.getDate()
+                    id,
+                    matchID,
+                    com.getMessage(),
+                    getCurrentTime()
             );
+            id++;
         }
+    }
+
+    private int getInsertionID(int matchID) {
+        int id = 1;
+
+        // Get number of Comments rows for a the specified Match
+        String sql_count = "select count(*) from comments where match_id = ?;";
+        int commentsRows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID} , Integer.class);
+
+        if(commentsRows != 0) {
+            String sql_id = "select max(comment_id) from comments where match_id = ?;";
+            id = jdbcTemplate.queryForObject(sql_id, new Object[]{matchID}, Integer.class) + 1;
+        }
+
+        return id;
     }
 
     private Timestamp getCurrentTime() {
