@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 public class Comment {
     private final int id;
     @NotBlank
-    private final String message;
+    private String message;
     private final Timestamp date;
 
     public Comment(int id, String message, Timestamp date) {
@@ -27,4 +27,10 @@ public class Comment {
     public Timestamp getDate() {
         return date;
     }
+
+    public void setMessage(String m) {
+        message = m;
+    }
+
+
 }

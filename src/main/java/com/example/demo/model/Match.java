@@ -1,11 +1,12 @@
 package com.example.demo.model;
 
 import javax.validation.constraints.NotBlank;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Match {
+public class Match implements Serializable {
     @NotBlank
     private int id;
     private final String homeTeam;

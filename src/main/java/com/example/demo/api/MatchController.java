@@ -29,12 +29,13 @@ public class MatchController {
 
     @GetMapping(path="{id}")
     public Match getMatchByID(@Valid @NotNull @PathVariable("id") int id) {
+        System.out.println("GET REQUEST");
         return matchService.getMatchByID(id)
                 .orElse(null);
     }
 
     @PostMapping(value="/{id}/comment")
-    public int addComments(@PathVariable("id") int id,  @Valid @NotNull @RequestBody List<Comment> comments) {
+    public int addComments(@PathVariable("id") int id, @Valid @NotNull @RequestBody List<Comment> comments) {
         return matchService.addComments(id, comments);
     }
 

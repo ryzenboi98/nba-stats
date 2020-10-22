@@ -1,5 +1,9 @@
 package com.example.demo.database;
 
+import com.example.demo.exception.EmptyDataSentException;
+import com.example.demo.exception.MatchDateException;
+import com.example.demo.exception.MatchDateNotFoundException;
+import com.example.demo.exception.MatchIDNotFoundException;
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 
@@ -9,13 +13,16 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
+import javax.swing.plaf.synth.SynthDesktopIconUI;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.ParseException;
 
 import java.text.SimpleDateFormat;
@@ -24,7 +31,6 @@ import java.util.*;
 @Repository("postgres")
 public class MatchDataAccessService implements MatchDB{
 
-    private final String baseURL = "https://rapidapi.p.rapidapi.com/";
     private final JdbcTemplate jdbcTemplate;
 
     public MatchDataAccessService(JdbcTemplate jdbcTemplate) {
@@ -36,6 +42,7 @@ public class MatchDataAccessService implements MatchDB{
 
     }
 
+    //@Cacheable(value = "Matches")
     @Override
     public List<Match> selectMatchesByDate(String date) throws ParseException {
         String urlPath = "games?";
@@ -45,11 +52,20 @@ public class MatchDataAccessService implements MatchDB{
         List<Match> matchList = new ArrayList<Match>();
         List<Stat> statsList = new ArrayList<>();
 
+        if(!dateIsValid(date)) {
+            System.out.println("Bad request for date");
+            throw new MatchDateException();
+        }
+
         // Request for RapidAPI
         String response = requestRapidAPI(urlPath, params);
 
         // Add all matches requested from the RapidAPI and all comments requested from DB
         addMatchComsRapidAPI(response, matchList, matchesIDs);
+
+        if(matchList.isEmpty()) {
+            throw new MatchDateNotFoundException();
+        }
 
         urlPath = "stats/?per_page=100";
         params = "";
@@ -72,19 +88,27 @@ public class MatchDataAccessService implements MatchDB{
         return matchList;
     }
 
+    //@Cacheable(value = "Match", key = "#id")
+
     @Override
     public Optional<Match> selectMatchById(int id) {
         String urlPath = "games/";
+
         String params = String.valueOf(id);
 
         List<Stat> statsList = new ArrayList<>();
-        List<Comment> comments = new ArrayList<>();
+        List<Comment> comments;
 
         // Request for RapidAPI
         String response = requestRapidAPI(urlPath, params);
 
+        if(response == null || response.equals("")) {
+            throw new MatchIDNotFoundException();
+        }
+
         JSONObject jsonObj = parseStringToJSON(response);
 
+        System.out.println("Getting match data...");
         //Get the data for the Match specified by ID
         Match match = getMatchData(jsonObj);
 
@@ -99,17 +123,22 @@ public class MatchDataAccessService implements MatchDB{
         statsList.sort(Comparator.comparing(Stat::getPoints).reversed());
         match.addStats(statsList);
 
+        System.out.println("Getting comments from database...");
         comments = getCommentsByMatchID(id);
         match.addComments(comments);
 
-        return Optional.ofNullable(match);
+        return Optional.of(match);
     }
 
     @Override
     public int insertComments(int matchID, List<Comment> comments) {
+        // Comments validation
+        validateComments(comments);
+
         Optional<Match> m = selectMatchById(matchID);
 
-        if(!m.isEmpty() && !comments.isEmpty()) {
+        if(m.isPresent()) {
+            // Get comment ID for insertion
             int id = getInsertionID(matchID);
 
             // Insert comments in the database
@@ -118,11 +147,39 @@ public class MatchDataAccessService implements MatchDB{
             return 1;
         } else {
             // There is no Match with such ID
-            return 0;
+            if(!m.isPresent())
+                throw new MatchIDNotFoundException();
+            else
+                throw new EmptyDataSentException();
         }
     }
 
-    @Override
+    public int updateCommentById(int matchID, int commentID, Comment comment) {
+        if(comment == null)
+            throw new EmptyDataSentException();
+
+        if(comment.getMessage().trim().isEmpty())
+            throw new EmptyDataSentException();
+        else
+            comment.setMessage(comment.getMessage().trim());
+
+        String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
+
+        int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
+
+        if(rows > 0) {
+            String sql = "update comments set comment = ?, c_date = ? where match_id = ? and comment_id = ?;";
+
+            System.out.println("Updating comment...");
+
+            jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
+            return 1;
+        } else {
+            throw new MatchIDNotFoundException();
+        }
+    }
+
+    //@Cacheable(value = "Match", key = "#id")
     public int deleteCommentById(int matchID, int commentID) {
         String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
 
@@ -134,30 +191,13 @@ public class MatchDataAccessService implements MatchDB{
 
             return 1;
         } else {
-           return 0;
-        }
-    }
-
-    @Override
-    public int updateCommentById(int matchID, int commentID, Comment comment) {
-        String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
-
-        //System.out.println("CommentID -> " + commentID);
-
-        int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
-
-        if(rows > 0) {
-            String sql = "update comments set comment = ?, c_date = ? where match_id = ? and comment_id = ?;";
-
-            jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
-            return 1;
-        } else {
-            return 0;
+            throw new MatchIDNotFoundException();
         }
     }
 
     private String requestRapidAPI(String urlPath, String params) {
         // Request for RapidAPI
+        String baseURL = "https://rapidapi.p.rapidapi.com/";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseURL + urlPath + params))
                 .header("x-rapidapi-host", "free-nba.p.rapidapi.com")
@@ -170,13 +210,14 @@ public class MatchDataAccessService implements MatchDB{
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+        assert response != null;
         return response.body();
     }
 
     private List<Comment> getCommentsByMatchID(int matchID) {
         String sql = "select * from comments where match_id = ? order by c_date desc;";
 
-        List<Comment> comments = jdbcTemplate.query(sql, new Object[] {matchID},
+        return jdbcTemplate.query(sql, new Object[] {matchID},
                 ((resultSet, i) -> {
                     int comment_id = Integer.parseInt(resultSet.getString("comment_id"));
                     String message = resultSet.getString("comment");
@@ -185,7 +226,6 @@ public class MatchDataAccessService implements MatchDB{
                     return new Comment(comment_id, message, d);
                 })
         );
-        return comments;
     }
 
     private boolean playerScoredPoints(JSONObject jsonObject) {
@@ -213,9 +253,8 @@ public class MatchDataAccessService implements MatchDB{
             format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
 
         Timestamp d = parseStringToTimestamp((String) jsonObject.get("date"), format);
-        Match match = new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, d);
 
-        return  match;
+        return new Match(id, homeTeam, visitorTeam, homeScore, visitorScore, d);
     }
 
     private Stat getStatData(JSONObject jsonObject) {
@@ -243,6 +282,7 @@ public class MatchDataAccessService implements MatchDB{
     }
 
     private void addMatchComsRapidAPI(String response, List<Match> matchList, List<Integer> matchesIDs) {
+
         JSONObject jsonObject = parseStringToJSON(response);
         JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
 
@@ -260,6 +300,9 @@ public class MatchDataAccessService implements MatchDB{
 
             matchList.add(match);
         }
+        System.out.println("Getting comments from database...");
+        System.out.println("Getting matches from database...");
+
     }
 
     private JSONObject parseStringToJSON(String response) {
@@ -275,6 +318,7 @@ public class MatchDataAccessService implements MatchDB{
         return jsonObject;
     }
 
+    /*
     private JSONArray parseMatchesData(String response) {
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = null;
@@ -289,6 +333,7 @@ public class MatchDataAccessService implements MatchDB{
 
         return jsonMatchesArray;
     }
+    */
 
     private void addStatsFirstPage(String response, List<Stat> statsList) {
         JSONObject jsonObject = parseStringToJSON(response);
@@ -371,6 +416,45 @@ public class MatchDataAccessService implements MatchDB{
 
         return id;
     }
+
+    private boolean dateIsValid(String date) {
+        String[] arrDateParams = date.split("-", 3);
+
+        if(arrDateParams.length != 3 || arrDateParams[0].length() != 4
+                || arrDateParams[1].length() != 2 || arrDateParams[2].length() != 2) {
+            return false;
+        }
+
+        DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
+        fmt.setLenient(false);
+
+        try {
+            fmt.parse(date);
+        } catch (ParseException e) {
+            return false;
+        }
+        return true;
+    }
+
+    private void validateComments(List<Comment> comments) {
+        if(comments.isEmpty())
+            throw new EmptyDataSentException();
+
+        for(Comment c : comments)
+            if(c.getMessage().trim().isEmpty())
+                throw new EmptyDataSentException();
+            else {
+                String s = c.getMessage().trim();
+                c.setMessage(s);
+            }
+    }
+
+    /*
+    private boolean idIsValid(int id) {
+
+    }
+
+     */
 
     private Timestamp getCurrentTime() {
         return new Timestamp(System.currentTimeMillis());
