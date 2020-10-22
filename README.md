@@ -1,43 +1,49 @@
-Show User
-Returns json data about a single user.
+#NBA Stats
 
-URL
+NBA Stats represents a RESTful API that works as a middleware of abstraction of the already existing [NBA API](https://rapidapi.com/theapiguy/api/free-nba) provided on Rapid API.
+The application was built using the Framework Spring Boot in Java.
 
-/users/:id
+The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides information about NBA matches, Teams, Players and Statistics.
 
-Method:
+The main objective of the NBA Stats API is to transform the data obtained from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
 
-GET
+#Rest API
 
-URL Params
+The REST API for the NBA Stats APP is described bellow.
 
-Required:
+##Get all matches specified by a given date
 
-id=[integer]
+##Request
 
-Data Params
+```http
+GET /api/nba/match/?=date=2019-02-09
+```
+##Response
 
-None
+```json
+[
+ {
+    "id": 48751,
+    "homeTeam": "Boston Celtics",
+    "visitorTeam": "LA Clippers",
+    "homeScore": 112,
+    "visitorScore": 123,
+    "date": "2019-02-09T00:00:00.000+00:00",
+    "allComments": [...],
+    "allStats": [...]
+ },
+ {
+    "id": 48751,
+    "homeTeam": "Boston Celtics",
+    "visitorTeam": "LA Clippers",
+    "homeScore": 112,
+    "visitorScore": 123,
+    "date": "2019-02-09T00:00:00.000+00:00",
+    "allComments": [...],
+    "allStats": [...]
+ }
+]
+```
 
-Success Response:
 
-Code: 200
-Content: { id : 12, name : "Michael Bloom" }
-Error Response:
 
-Code: 404 NOT FOUND
-Content: { error : "User doesn't exist" }
-OR
-
-Code: 401 UNAUTHORIZED
-Content: { error : "You are unauthorized to make this request." }
-Sample Call:
-
-  $.ajax({
-    url: "/users/1",
-    dataType: "json",
-    type : "GET",
-    success : function(r) {
-      console.log(r);
-    }
-  });
