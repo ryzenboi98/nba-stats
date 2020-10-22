@@ -47,5 +47,30 @@ GET /api/nba/match/?date=2019-02-09
 ]
 ```
 
+## Get a match specified by the ID
+
+```http
+GET /api/nba/match/1
+```
+
+## Response 
+
+```json
+[
+ {
+    "id": 1,
+    "homeTeam": "Boston Celtics",
+    "visitorTeam": "Philadelphia 76ers",
+    "homeScore": 105,
+    "visitorScore": 87,
+    "date": "2018-10-16T00:00:00.000+00:00",
+    "allComments": [...],
+    "allStats": [...]
+ }
+]
+```
+
+
+
 
 
