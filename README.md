@@ -9,7 +9,7 @@ The main objective of the NBA Stats API is to transform the data obtained from [
 
 # Rest API
 
-The REST API for the NBA Stats APP is described bellow.
+The REST API for the NBA Stats App is described bellow.
 
 ## Get all matches specified by a given date
 
