@@ -1,4 +1,4 @@
-#NBA Stats
+# NBA Stats
 
 NBA Stats represents a RESTful API that works as a middleware of abstraction of the already existing [NBA API](https://rapidapi.com/theapiguy/api/free-nba) provided on Rapid API.
 The application was built using the Framework Spring Boot in Java.
@@ -7,18 +7,18 @@ The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides info
 
 The main objective of the NBA Stats API is to transform the data obtained from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
 
-#Rest API
+# Rest API
 
 The REST API for the NBA Stats APP is described bellow.
 
-##Get all matches specified by a given date
+## Get all matches specified by a given date
 
-##Request
+## Request
 
 ```http
 GET /api/nba/match/?=date=2019-02-09
 ```
-##Response
+## Response
 
 ```json
 [
