@@ -49,6 +49,8 @@ GET /api/nba/match/?date=2019-02-09
 
 ## Get a match specified by the ID
 
+## Request
+
 ```http
 GET /api/nba/match/1
 ```
