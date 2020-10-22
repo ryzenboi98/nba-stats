@@ -16,7 +16,7 @@ The REST API for the NBA Stats App is described bellow.
 ## Request
 
 ```http
-GET /api/nba/match/?=date=2019-02-09
+GET /api/nba/match/?date=2019-02-09
 ```
 ## Response
 
