@@ -13,7 +13,7 @@ The REST API for the NBA Stats App is described bellow.
 
 ## Get all matches specified by a given date
 
-The given date has to be in the specific format yyyy-MM-dd
+The request params must be `date=[yyyy-MM-dd]` for getting all matches with the given date `yyyy-MM-dd`.
 
 ## Request
 
@@ -49,6 +49,8 @@ GET /api/nba/match/?date=2019-02-09
 
 ## Get a match specified by the ID
 
+The request must have an integer representing the `id` of a match.
+
 ## Request
 
 ```http
@@ -73,14 +75,16 @@ GET /api/nba/match/1
 ```
 
 ## Create multiple comments for a match
-
+The request needs the match `id` following by the path for the comments.
 ## Request
 
 ```http
-GET /api/nba/match/1/comment
+POST /api/nba/match/1/comment
 ```
 
 ## Request body
+
+The request body must come in 'ArrayJSON' object type.
 
 ```json
 [
@@ -91,6 +95,38 @@ GET /api/nba/match/1/comment
     "message": "I was expecting more from Aron Bayne.."
  }
 ]
+```
+## Update a comment from a match
+
+The request must have the `id` of the match followed by the comment path and the `if` of the comment.
+
+## Request
+
+```http
+PUT /api/nba/match/1/comment/2
+```
+
+## Request Body
+
+The request body must come in `JSON` object type.
+
+```json
+{
+    "message": "I was expecting more from Aron Bayne even though the rest of the team did pretty well."
+}
+```
+
+## Delete a comment from a match
+
+The request must have the `id` of the match followed by the comment path and the `if` of the comment.
+
+## Request
+
+```http
+DELETE /api/nba/match/1/comment/1
+```
+
+
 
 
 
