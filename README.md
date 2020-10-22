@@ -22,7 +22,7 @@ GET /api/nba/match/?date=2019-02-09
 ```
 ## Response
 
-```javascript
+```json
 [
  {
     "id": 48751,
@@ -71,6 +71,27 @@ GET /api/nba/match/1
  }
 ]
 ```
+
+## Create multiple comments for a match
+
+## Request
+
+```http
+GET /api/nba/match/1/comment
+```
+
+## Request body
+
+```json
+[
+ {
+    "message": "What a play from Jayson Tatum! Well done!"
+ },
+ {
+    "message": "I was expecting more from Aron Bayne.."
+ }
+]
+
 
 
 
