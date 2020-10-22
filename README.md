@@ -13,6 +13,8 @@ The REST API for the NBA Stats App is described bellow.
 
 ## Get all matches specified by a given date
 
+The given date has to be in the specific format yyyy-MM-dd
+
 ## Request
 
 ```http
