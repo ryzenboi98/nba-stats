@@ -22,7 +22,7 @@ GET /api/nba/match/?date=2019-02-09
 ```
 ## Response
 
-```json
+```javascript
 [
  {
     "id": 48751,
