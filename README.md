@@ -84,7 +84,7 @@ POST /api/nba/match/1/comment
 
 ## Request body
 
-The request body must come in 'ArrayJSON' object type.
+The request body must come in `ArrayJSON` object type.
 
 ```json
 [
@@ -98,7 +98,7 @@ The request body must come in 'ArrayJSON' object type.
 ```
 ## Update a comment from a match
 
-The request must have the `id` of the match followed by the comment path and the `if` of the comment.
+The request must have the `id` of the match followed by the comment path and the `id` of the comment.
 
 ## Request
 
@@ -118,7 +118,7 @@ The request body must come in `JSON` object type.
 
 ## Delete a comment from a match
 
-The request must have the `id` of the match followed by the comment path and the `if` of the comment.
+The request must have the `id` of the match followed by the comment path and the `id` of the comment.
 
 ## Request
 
