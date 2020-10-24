@@ -12,7 +12,7 @@ The main objective of the NBA Stats API is to transform the obtained data from [
 For compiling this project you may need to install the dependencies already provided on the `pom.xml` file simply by exporting the Project and running the application with an IDE supporting Maven or Gradle. 
 
 Secondly you need to create a postgresql instance with [Docker](https://docs.docker.com/get-docker/) and create a database.
-You can achieve that by running the following command with an username and password by your choice after installing [Docker](https://docs.docker.com/get-docker/):
+You can achieve that by running the following command onthe terminal with an username and password by your choice after installing [Docker](https://docs.docker.com/get-docker/):
 
 `docker run --name 'instance_name' -e POSTGRES_PASSWORD='password' -d -p 5432:5432 postgres:alpine`
 
