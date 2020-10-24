@@ -113,7 +113,7 @@ GET /api/nba/match/?date=2019-02-09
 
 ## Get a match specified by the ID
 
-The request must have an integer representing the `id` of a match.
+The request URL must have an integer representing the `id` of a match.
 
 ## Request
 
