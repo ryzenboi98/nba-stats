@@ -1,6 +1,6 @@
 app:
   datasource:
-    jdbc-url: jdbc:postgresql://localhost:5432/[database_name]
-    username: [username]
-    password: [password]
-    pool-size: [number of allowed requests until a new db connection]
+    jdbc-url: jdbc:postgresql://localhost:5432/nbastats
+    username: postgres
+    password: password
+    pool-size: 30
