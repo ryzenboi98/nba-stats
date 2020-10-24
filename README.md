@@ -1,11 +1,55 @@
 # NBA Stats
 
 NBA Stats represents a RESTful API that works as a middleware of abstraction of the already existing [NBA API](https://rapidapi.com/theapiguy/api/free-nba) provided on Rapid API.
-The application was built using the Framework Spring Boot in Java.
+This application was built under the Framework Spring Boot in Java.
 
-The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides information about NBA matches, Teams, Players and Statistics.
+The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides information about NBA Matches, Teams, Players and Statistics.
 
-The main objective of the NBA Stats API is to transform the data obtained from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
+The main objective of the NBA Stats API is to transform the obtained data from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
+
+## Match structure
+
+Each Match contains the following representative structure.
+
+```json
+{
+    "id": 1,
+    "homeTeam": "Boston Celtics",
+    "visitorTeam": "Philadelphia 76ers",
+    "homeScore": 105,
+    "visitorScore": 87,
+    "date": "2018-10-16T00:00:00.000+00:00",
+    "allComments": [
+        {
+            "id": 2,
+            "message": "Oh what a game from boston",
+            "date": "2020-10-24T15:09:01.723+00:00"
+        },
+        {
+            "id": 3,
+            "message": "Joel did so good!",
+            "date": "2020-10-24T15:09:09.147+00:00"
+        }, 
+        {...}
+    ],
+    "allStats": [
+        {
+            "playerName": "Joel Embiid",
+            "points": 23
+        },
+        {
+            "playerName": "Jayson Tatum",
+            "points": 23
+        },
+        {
+            "playerName": "Ben Simmons",
+            "points": 19
+        },
+        {...}
+    ]
+}
+```
+Each match contains the home and visitor team information such as the name and the score for each team, contains the comments of the match and the points statistics for each player that scored atleast 1 point.
 
 # Rest API
 
