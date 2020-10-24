@@ -55,4 +55,25 @@ public class MatchExceptionController {
         return new ResponseEntity<>(exceptionError, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(value = IDNotFoundException.class)
+    public ResponseEntity<ExceptionError> handleCommentIDNotFoundException(IDNotFoundException e) {
+        ExceptionError exceptionError = new ExceptionError(
+                HttpStatus.NOT_FOUND.value(),
+                "Bad Request",
+                "The match ID or comment ID doesn't exist",
+                ZonedDateTime.now(ZoneId.of("Z"))
+        );
+        return new ResponseEntity<>(exceptionError, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = SucessCreateException.class)
+    public ResponseEntity<SuccessException> hanldeSucessCreateException(SucessCreateException e) {
+        SuccessException successException = new SuccessException(
+                HttpStatus.CREATED.value(),
+                "The data sent has been successfully created",
+                ZonedDateTime.now(ZoneId.of("Z"))
+        );
+        return new ResponseEntity<>(successException, HttpStatus.CREATED);
+    }
+
 }

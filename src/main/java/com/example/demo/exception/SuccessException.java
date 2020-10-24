@@ -4,16 +4,14 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-public class ExceptionError {
+public class SuccessException {
     private final int status;
-    private final String error;
     private final String message;
     private final ZonedDateTime timestamp;
 
 
-    public ExceptionError(int status, String error, String message, ZonedDateTime timestamp) {
+    public SuccessException(int status, String message, ZonedDateTime timestamp) {
         this.status = status;
-        this.error = error;
         this.message = message;
         this.timestamp = timestamp;
     }
@@ -22,11 +20,7 @@ public class ExceptionError {
         return status;
     }
 
-    public String getError() {
-        return error;
-    }
-
-    public String getErrorMessage() {
+    public String getMessage() {
         return message;
     }
 

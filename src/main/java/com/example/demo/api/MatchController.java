@@ -4,6 +4,7 @@ import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 import com.example.demo.service.MatchService;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -12,8 +13,9 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 
-@RequestMapping("api/nba/match")
+
 @RestController
+@RequestMapping("api/nba/match")
 public class MatchController {
     private final MatchService matchService;
 

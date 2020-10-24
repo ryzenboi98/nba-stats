@@ -1,9 +1,6 @@
 package com.example.demo.database;
 
-import com.example.demo.exception.EmptyDataSentException;
-import com.example.demo.exception.MatchDateException;
-import com.example.demo.exception.MatchDateNotFoundException;
-import com.example.demo.exception.MatchIDNotFoundException;
+import com.example.demo.exception.*;
 import com.example.demo.model.Comment;
 import com.example.demo.model.Match;
 
@@ -11,11 +8,12 @@ import com.example.demo.model.Stat;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.StringUtils;
 
-import javax.swing.plaf.synth.SynthDesktopIconUI;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -42,7 +40,7 @@ public class MatchDataAccessService implements MatchDB{
 
     }
 
-    //@Cacheable(value = "Matches")
+    @Cacheable(value = "Matches")
     @Override
     public List<Match> selectMatchesByDate(String date) throws ParseException {
         String urlPath = "games?";
@@ -88,8 +86,7 @@ public class MatchDataAccessService implements MatchDB{
         return matchList;
     }
 
-    //@Cacheable(value = "Match", key = "#id")
-
+    @Cacheable(value = "Match", key = "#id")
     @Override
     public Optional<Match> selectMatchById(int id) {
         String urlPath = "games/";
@@ -130,9 +127,13 @@ public class MatchDataAccessService implements MatchDB{
         return Optional.of(match);
     }
 
+
+    @Caching(evict = {
+            @CacheEvict(value = "Matches", allEntries = true),
+            @CacheEvict(value = "Match", key = "#matchID")
+    })
     @Override
     public int insertComments(int matchID, List<Comment> comments) {
-        // Comments validation
         validateComments(comments);
 
         Optional<Match> m = selectMatchById(matchID);
@@ -143,8 +144,9 @@ public class MatchDataAccessService implements MatchDB{
 
             // Insert comments in the database
             insertCommentsDB(comments, id, matchID);
+            System.out.println("Inserting new data..");
 
-            return 1;
+            throw new SucessCreateException();
         } else {
             // There is no Match with such ID
             if(!m.isPresent())
@@ -154,6 +156,11 @@ public class MatchDataAccessService implements MatchDB{
         }
     }
 
+
+    @Caching(evict = {
+            @CacheEvict(value = "Matches", allEntries = true),
+            @CacheEvict(value = "Match", key = "#matchID")
+    })
     public int updateCommentById(int matchID, int commentID, Comment comment) {
         if(comment == null)
             throw new EmptyDataSentException();
@@ -175,23 +182,30 @@ public class MatchDataAccessService implements MatchDB{
             jdbcTemplate.update(sql, comment.getMessage(), getCurrentTime(), matchID, commentID);
             return 1;
         } else {
-            throw new MatchIDNotFoundException();
+            throw new IDNotFoundException();
         }
     }
 
-    //@Cacheable(value = "Match", key = "#id")
+
+    @Caching(evict = {
+            @CacheEvict(value = "Matches", allEntries = true),
+            @CacheEvict(value = "Match", key = "#matchID")
+    })
     public int deleteCommentById(int matchID, int commentID) {
+
         String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
 
         int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
 
-        if(rows > 0) {
+        if(rows == 1) {
             String sql = "delete from comments where match_id = ? and comment_id = ?;";
             jdbcTemplate.update(sql, matchID, commentID);
 
+            System.out.println("Deleting comment..");
+
             return 1;
         } else {
-            throw new MatchIDNotFoundException();
+            throw new IDNotFoundException();
         }
     }
 
@@ -259,7 +273,7 @@ public class MatchDataAccessService implements MatchDB{
 
     private Stat getStatData(JSONObject jsonObject) {
         Stat stat = new Stat((String) ((JSONObject) jsonObject.get("player")).get("first_name") + " " +
-                        ((JSONObject) jsonObject.get("player")).get("last_name"), Math.toIntExact((Long) jsonObject.get("pts")));
+                ((JSONObject) jsonObject.get("player")).get("last_name"), Math.toIntExact((Long) jsonObject.get("pts")));
 
         int matchID = (Math.toIntExact((Long) ((JSONObject) jsonObject.get("game")).get("id")));
         stat.setMatchID(matchID);
@@ -318,22 +332,6 @@ public class MatchDataAccessService implements MatchDB{
         return jsonObject;
     }
 
-    /*
-    private JSONArray parseMatchesData(String response) {
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject = null;
-
-        try {
-            jsonObject = (JSONObject) parser.parse(response);
-        } catch (org.json.simple.parser.ParseException e) {
-            e.printStackTrace();
-        }
-
-        JSONArray jsonMatchesArray = (JSONArray) jsonObject.get("data");
-
-        return jsonMatchesArray;
-    }
-    */
 
     private void addStatsFirstPage(String response, List<Stat> statsList) {
         JSONObject jsonObject = parseStringToJSON(response);
@@ -390,6 +388,7 @@ public class MatchDataAccessService implements MatchDB{
                 " c_date) " +
                 "VALUES (?, ?, ?, ?);";
 
+        //System.out.println("idd -> " + id);
         for(Comment com : comments) {
             jdbcTemplate.update(
                     sql,
@@ -409,10 +408,12 @@ public class MatchDataAccessService implements MatchDB{
         String sql_count = "select count(*) from comments where match_id = ?;";
         int commentsRows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID} , Integer.class);
 
-        if(commentsRows != 0) {
+        if(commentsRows > 0) {
             String sql_id = "select max(comment_id) from comments where match_id = ?;";
+
             id = jdbcTemplate.queryForObject(sql_id, new Object[]{matchID}, Integer.class) + 1;
         }
+        //System.out.println("ID -> " + id);
 
         return id;
     }
@@ -437,6 +438,9 @@ public class MatchDataAccessService implements MatchDB{
     }
 
     private void validateComments(List<Comment> comments) {
+        if(comments == null)
+            throw new EmptyDataSentException();
+
         if(comments.isEmpty())
             throw new EmptyDataSentException();
 
@@ -449,13 +453,6 @@ public class MatchDataAccessService implements MatchDB{
             }
     }
 
-    /*
-    private boolean idIsValid(int id) {
-
-    }
-
-     */
-
     private Timestamp getCurrentTime() {
         return new Timestamp(System.currentTimeMillis());
     }
@@ -463,7 +460,6 @@ public class MatchDataAccessService implements MatchDB{
     private Timestamp parseStringToTimestamp(String date, SimpleDateFormat format) {
         Date d = new Date();
         Timestamp dat;
-
 
         if(format == null) {
             format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -476,8 +472,6 @@ public class MatchDataAccessService implements MatchDB{
         }
 
         dat = new Timestamp(d.getTime());
-
-        //dat = Timestamp.valueOf(date);
 
         return dat;
     }
