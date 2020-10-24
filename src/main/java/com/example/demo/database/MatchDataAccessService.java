@@ -192,7 +192,6 @@ public class MatchDataAccessService implements MatchDB{
             @CacheEvict(value = "Match", key = "#matchID")
     })
     public int deleteCommentById(int matchID, int commentID) {
-
         String sql_count = "select count(*) from comments where match_id = ? and comment_id = ?;";
 
         int rows = jdbcTemplate.queryForObject(sql_count, new Object[] {matchID, commentID}, Integer.class);
