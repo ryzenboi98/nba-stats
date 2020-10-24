@@ -25,6 +25,8 @@ After that you need setup your postgresql database by running the command `psql 
 
 At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
 
+After completing the configuration you can now execute and test the API endpoints for the NBA Stats Application.
+
 ## Match structure
 
 All Matches contains the following representative structure.
