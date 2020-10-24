@@ -9,20 +9,21 @@ The main objective of the NBA Stats API is to transform the obtained data from [
 
 ## Project setup
 
-For compiling this project you may need to install the dependencies already provided on the 'pom.xml' file simply by exporting and running the application by and IDE supporting Maven or Gradle Project. 
+For compiling this project you may need to install the dependencies already provided on the `pom.xml` file simply by exporting and running the application by and IDE supporting Maven or Gradle Project. 
 
 Secondly you need to create a postgresql instance with [Docker](https://docs.docker.com/get-docker/) and create a database.
 You can achieve that by running the following command after installing [Docker](https://docs.docker.com/get-docker/):
-'docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres:alpine'
 
-You can now check all of the docker instances with the command 'docker container ls -a' and get the container ID for the instance created.
-With the container ID you may start the instance by running the command 'docker start container_id' and execute the instance with the following command:
+`docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres:alpine`
 
-'docker exec -it 'container_id' /bin/bash'
+You can now check all of the docker instances with the command `docker container ls -a` and get the container ID for the instance created.
+With the container ID you may start the instance by running the command `docker start 'container_id'` and execute the instance with the following command:
 
-After that you need setup your postgresql database by running the command 'psql -U postgres' and create the database by writing the command 'create database 'database_name';'.
+`docker exec -it 'container_id' /bin/bash`
 
-At this moment you are now ready to setup the final configuration on the file 'application.yml' where you will need to insert the database information as it is described on the file.
+After that you need setup your postgresql database by running the command `psql -U postgres` and create the database by writing the command `create database 'database_name';`.
+
+At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
 
 ## Match structure
 
