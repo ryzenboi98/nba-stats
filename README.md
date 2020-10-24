@@ -9,7 +9,7 @@ The main objective of the NBA Stats API is to transform the obtained data from [
 
 ## Match structure
 
-Each Match contains the following representative structure.
+All Matches contains the following representative structure.
 
 ```json
 {
@@ -49,11 +49,11 @@ Each Match contains the following representative structure.
     ]
 }
 ```
-Each match contains the home and visitor team information such as the name and the score for each team, contains the comments of the match and the points statistics for each player that scored atleast 1 point.
+Each Match contains the home and visitor team information, the comments of the match and the points statistics for each player that scored atleast 1 point.
 
 # Rest API
 
-The REST API for the NBA Stats App is described bellow.
+The REST API for the NBA Stats Application is described bellow.
 
 ## Get all matches specified by a given date
 
