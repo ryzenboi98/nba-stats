@@ -14,14 +14,14 @@ For compiling this project you may need to install the dependencies already prov
 Secondly you need to create a postgresql instance with [Docker](https://docs.docker.com/get-docker/) and create a database.
 You can achieve that by running the following command with an username and password by your choice after installing [Docker](https://docs.docker.com/get-docker/):
 
-`docker run --name 'username' -e POSTGRES_PASSWORD='password' -d -p 5432:5432 postgres:alpine`
+`docker run --name 'instance_name' -e POSTGRES_PASSWORD='password' -d -p 5432:5432 postgres:alpine`
 
 You can now check all of the docker instances with the command `docker container ls -a` and get the container ID for the instance created.
 With the container ID you may start the instance by running the command `docker start 'container_id'` and execute the instance with the following command:
 
 `docker exec -it 'container_id' /bin/bash`
 
-After that you need setup your postgresql database by running the command `psql -U postgres` and create the database by writing the command `create database 'database_name';`.
+After that you need setup your postgresql database by running the command `psql -U 'username'` with default username as 'postgres' and create the database by writing the command `create database 'database_name';`.
 
 At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
 
