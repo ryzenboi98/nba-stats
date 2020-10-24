@@ -21,6 +21,10 @@ With the container ID you may start the instance by running the command `docker 
 
 `docker exec -it 'container_id' /bin/bash`
 
+or simply,
+
+`docker exec -it 'instance_name' /bin/bash`
+
 After that you need setup your postgresql database by running the command `psql -U 'username'` with default username as 'postgres' and create the database by writing the command `create database 'database_name';`.
 
 At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
