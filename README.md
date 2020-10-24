@@ -1,15 +1,83 @@
 # NBA Stats
 
-NBA Stats represents a RESTful API that works as a middleware of abstraction of the already existing [NBA API](https://rapidapi.com/theapiguy/api/free-nba) provided on Rapid API.
-The application was built using the Framework Spring Boot in Java.
+NBA Stats represents a RESTful API that works as a middleware of abstraction of the already existing [NBA API](https://rapidapi.com/theapiguy/api/free-nba).
+This application was built under the Framework Spring Boot in Java.
 
-The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides information about NBA matches, Teams, Players and Statistics.
+The [NBA API](https://rapidapi.com/theapiguy/api/free-nba) already provides information about NBA Matches, Teams, Players and Statistics.
 
-The main objective of the NBA Stats API is to transform the data obtained from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
+The main objective of the NBA Stats API is to transform the obtained data from [NBA API](https://rapidapi.com/theapiguy/api/free-nba) to a different structure with aditive information.
+
+## Project setup
+
+For compiling this project you may need to install the dependencies already provided on the `pom.xml` file simply by exporting the Project and running the application with an IDE supporting Maven or Gradle. 
+
+Secondly you need to create a postgresql instance with [Docker](https://docs.docker.com/get-docker/) and create a database.
+You can achieve that by running the following command with an username and password by your choice after installing [Docker](https://docs.docker.com/get-docker/):
+
+`docker run --name 'instance_name' -e POSTGRES_PASSWORD='password' -d -p 5432:5432 postgres:alpine`
+
+You can now check all of the docker instances with the command `docker container ls -a` and get the container ID for the instance created.
+With the container ID you may start the instance by running the command `docker start 'container_id'` and execute the instance with the following command:
+
+`docker exec -it 'container_id' /bin/bash`
+
+or simply,
+
+`docker exec -it 'instance_name' /bin/bash`
+
+After that you need setup your postgresql database by running the command `psql -U 'username'` with default username as 'postgres' and create the database by writing the command `create database 'database_name';`.
+
+At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
+
+After completing the configuration you can now execute and test the API endpoints for the NBA Stats Application.
+
+## Match structure
+
+All Matches contains the following representative structure.
+
+```json
+{
+    "id": 1,
+    "homeTeam": "Boston Celtics",
+    "visitorTeam": "Philadelphia 76ers",
+    "homeScore": 105,
+    "visitorScore": 87,
+    "date": "2018-10-16T00:00:00.000+00:00",
+    "allComments": [
+        {
+            "id": 2,
+            "message": "Oh what a game from boston",
+            "date": "2020-10-24T15:09:01.723+00:00"
+        },
+        {
+            "id": 3,
+            "message": "Joel did so good!",
+            "date": "2020-10-24T15:09:09.147+00:00"
+        }, 
+        {...}
+    ],
+    "allStats": [
+        {
+            "playerName": "Joel Embiid",
+            "points": 23
+        },
+        {
+            "playerName": "Jayson Tatum",
+            "points": 23
+        },
+        {
+            "playerName": "Ben Simmons",
+            "points": 19
+        },
+        {...}
+    ]
+}
+```
+Each Match contains the home and visitor team information, the comments of the match and the points statistics for each player that scored atleast 1 point.
 
 # Rest API
 
-The REST API for the NBA Stats App is described bellow.
+The REST API for the NBA Stats Application is described bellow.
 
 ## Get all matches specified by a given date
 
@@ -49,7 +117,7 @@ GET /api/nba/match/?date=2019-02-09
 
 ## Get a match specified by the ID
 
-The request must have an integer representing the `id` of a match.
+The request URL must have an integer representing the `id` of a match.
 
 ## Request
 
