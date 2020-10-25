@@ -86,7 +86,7 @@ The request params must be `date=[yyyy-MM-dd]` for getting all matches with the 
 ## Request
 
 ```http
-GET /api/nba/match/?date=2019-02-09
+GET localhost:8080/api/nba/match/?date=2019-02-09
 ```
 ## Response
 
@@ -122,7 +122,7 @@ The request URL must have an integer representing the `id` of a match.
 ## Request
 
 ```http
-GET /api/nba/match/1
+GET localhost:8080/api/nba/match/1
 ```
 
 ## Response 
@@ -147,7 +147,7 @@ The request needs the match `id` following by the path for the comments.
 ## Request
 
 ```http
-POST /api/nba/match/1/comment
+POST localhost:8080/api/nba/match/1/comment
 ```
 
 ## Request body
@@ -171,7 +171,7 @@ The request must have the `id` of the match followed by the comment path and the
 ## Request
 
 ```http
-PUT /api/nba/match/1/comment/2
+PUT localhost:8080/api/nba/match/1/comment/2
 ```
 
 ## Request Body
@@ -191,7 +191,7 @@ The request must have the `id` of the match followed by the comment path and the
 ## Request
 
 ```http
-DELETE /api/nba/match/1/comment/1
+DELETE localhost:8080/api/nba/match/1/comment/1
 ```
 
 
