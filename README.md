@@ -21,7 +21,7 @@ Make sure that port 5432 is not in use which may cause conflicts later on the ap
 
 
 You can now check all of the docker instances with the command `docker container ls -a` and check if your instance is running.
-If not you must start your instance by running the command `docker start 'instance_name'` and execute the instance with the following command:
+If not, you must start your instance by running the command `docker start 'instance_name'` and execute the instance with the following command:
 
 `docker exec -it 'instance_name' /bin/bash`
 
