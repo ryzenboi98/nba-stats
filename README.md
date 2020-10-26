@@ -21,11 +21,11 @@ Make sure that port 5432 is not in use which may cause conflicts later on the ap
 
 
 You can now check all of the docker instances with the command `docker container ls -a` and check if your instance is running.
-If not, you must start your instance by running the command `docker start 'instance_name'`. Once the instance is running you need to make a connection the the instance using the command line:
+If not, you must start your instance by running the command `docker start 'instance_name'`. Once the instance is running you need to make a connection to the instance using the command line:
 
 `docker exec -it 'instance_name' /bin/bash`
 
-After connecting to the instance you need setup your postgresql database by running the command `psql -U 'username'` with the default username as `postgres` and create the database by writing the command `create database 'database_name';`.
+After connecting to the instance you need to connect to postgresql by running the command `psql -U 'username'` with the default username as `postgres` and create the database by writing the command `create database 'database_name';`.
 
 At this moment you are now ready to setup the final configuration on the file `application.yml` where you will need to insert the database information as it is described on the file.
 
