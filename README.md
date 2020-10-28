@@ -77,7 +77,7 @@ Each Match contains the home and visitor team information, the comments of the m
 
 # Rest API
 
-The REST API for the NBA Stats Application is described bellow.
+The REST API for the NBA Stats Application is described bellow. You can also check in the following [link](https://documenter.getpostman.com/view/10837120/TVYGddhe) the Postman documentation.
 
 ## Get all matches specified by a given date
 
